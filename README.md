@@ -1,249 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PayPal AI Invoice Agent</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+# PayPal AI Collections Agent
 
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f6f9;
-            color: #1f2933;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+An AI-assisted collections agent for small businesses and freelancers. It reviews unpaid invoices, scores each one by risk, drafts a reminder whose tone matches how overdue the payment is, and waits for human approval before anything is sent.
 
-        header {
-            background: #003087;
-            color: #ffffff;
-            padding: 24px;
-        }
-        header h1 { font-size: 24px; }
-        header p { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+Built for the PayPal AI Hackathon.
 
-        main {
-            flex: 1;
-            max-width: 900px;
-            width: 100%;
-            margin: 24px auto;
-            padding: 0 16px;
-        }
+## The Problem
 
-        .card {
-            background: #ffffff;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-        }
+Freelancers and small businesses often chase late payments by hand. Reminders are sent late, the tone is inconsistent, and nobody tracks which clients are high risk. This wastes time and delays cash flow.
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td {
-            text-align: left;
-            padding: 12px 8px;
-            border-bottom: 1px solid #e4e7eb;
-            font-size: 14px;
-        }
-        th { color: #616e7c; font-weight: 600; }
+## The Solution
 
-        .badge {
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .badge.paid { background: #d3f9e0; color: #0f7a3a; }
-        .badge.unpaid { background: #fff3c4; color: #8a6100; }
-        .badge.overdue { background: #ffd6d6; color: #a11d1d; }
+The agent automates the routine work and keeps a person in control:
 
-        button {
-            background: #009cde;
-            color: #ffffff;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        button:hover { background: #0081b5; }
-        button:focus { outline: 3px solid #a6dcf5; }
-        button.secondary { background: #e4e7eb; color: #1f2933; }
-        button.secondary:hover { background: #cbd2d9; }
+1. **Scan** all invoices and find the ones that are unpaid or overdue.
+2. **Assess risk** using how late the payment is and how large the amount is.
+3. **Draft** a reminder with a tone that matches the situation: friendly, firm, or final.
+4. **Review** the drafts in an approval queue.
+5. **Send** only after the user confirms. Each step is recorded in an activity log.
 
-        .actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+## Key Features
 
-        .reminder {
-            border-left: 4px solid #009cde;
-            background: #f0f8fc;
-            padding: 12px 16px;
-            margin-top: 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        .reminder strong { display: block; margin-bottom: 4px; }
+- Risk scoring for every unpaid invoice (low, medium, high)
+- Tone-aware reminder drafts
+- Human-in-the-loop approval before any message is sent
+- Activity log that shows every agent action
+- Summary dashboard with outstanding amount, overdue count, and high-risk accounts
 
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.45);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-        .modal-overlay.open { display: flex; }
-        .modal {
-            background: #ffffff;
-            border-radius: 10px;
-            padding: 24px;
-            max-width: 400px;
-            width: 100%;
-        }
-        .modal h2 { font-size: 18px; margin-bottom: 8px; }
-        .modal p { font-size: 14px; color: #616e7c; margin-bottom: 16px; }
-        .modal .actions { justify-content: flex-end; margin-top: 0; }
+## How PayPal Is Used
 
-        .success {
-            display: none;
-            color: #0f7a3a;
-            font-weight: 600;
-            margin-top: 12px;
-        }
-        .success.show { display: block; }
+- **PayPal Developer Platform (Sandbox):** Invoice data and payment links are designed to come from the PayPal Invoicing API in the sandbox environment.
+- **Payment links:** Each reminder includes a PayPal payment link so the client can pay immediately.
 
-        footer {
-            text-align: center;
-            font-size: 12px;
-            color: #616e7c;
-            padding: 16px;
-        }
-    </style>
-</head>
-<body>
+> The current demo uses mock invoice data. The PayPal sandbox integration is the next planned step.
 
-    <header>
-        <h1>PayPal AI Invoice Agent</h1>
-        <p>AI se reminder emails banayein aur approval ke baad bhejें</p>
-    </header>
+## How AI Is Used
 
-    <main>
-        <section class="card">
-            <h2>Invoices</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Client</th>
-                        <th>Amount (USD)</th>
-                        <th>Due date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="invoice-body"></tbody>
-            </table>
+- **Reminder drafting:** The reminder text is designed to be generated by the Claude API. The current demo uses rule-based templates that follow the same tone logic.
+- **Risk assessment:** A scoring step decides how urgent each invoice is and which tone to use.
 
-            <div class="actions">
-                <button id="generate-btn">Generate reminder emails</button>
-            </div>
+> The current demo uses rule-based drafts. The Claude API integration is planned for the server route.
 
-            <div id="reminders"></div>
+## Tech Stack
 
-            <div class="actions" id="approve-area" style="display:none;">
-                <button id="approve-btn">Approve &amp; send</button>
-            </div>
+- HTML, CSS, and JavaScript (demo frontend)
+- Planned: Next.js, TypeScript, and Tailwind CSS
+- PayPal Developer Platform (Sandbox)
+- Claude API (AI drafting)
 
-            <p class="success" id="success-msg">Sandbox mein reminders "bhej diye" gaye (demo only).</p>
-        </section>
-    </main>
+## Getting Started
 
-    <div class="modal-overlay" id="modal">
-        <div class="modal">
-            <h2>Kya aap sure hain?</h2>
-            <p>Ye sirf demo hai. Koi real email ya payment nahi jayega.</p>
-            <div class="actions">
-                <button class="secondary" id="cancel-btn">Cancel</button>
-                <button id="confirm-btn">Confirm</button>
-            </div>
-        </div>
-    </div>
+### Prerequisites
 
-    <footer>Sandbox demo only</footer>
+- A modern web browser
+- Node.js (LTS) if you use the Next.js version
+- A free PayPal Developer account (https://developer.paypal.com)
 
-    <script>
-        // Dummy data (baad mein backend se aayega)
-        const invoices = [
-            { id: 1, client: "Rahul Sharma", amount: 450, dueDate: "2026-10-10", status: "overdue" },
-            { id: 2, client: "Priya Designs", amount: 1200, dueDate: "2026-10-20", status: "unpaid" },
-            { id: 3, client: "Acme Studio", amount: 800, dueDate: "2026-10-05", status: "paid" },
-            { id: 4, client: "Nexa Tech", amount: 2300, dueDate: "2026-10-25", status: "unpaid" }
-        ];
+### Run the Demo
 
-        const invoiceBody = document.getElementById("invoice-body");
-        const remindersDiv = document.getElementById("reminders");
-        const approveArea = document.getElementById("approve-area");
-        const successMsg = document.getElementById("success-msg");
-        const modal = document.getElementById("modal");
+1. Clone the repository:
+```bash
+   git clone https://github.com/your-username/your-repo.git
+   cd your-repo
+```
+2. Open `index.html` in your browser.
 
-        // Table render karna
-        function renderInvoices() {
-            invoiceBody.innerHTML = "";
-            invoices.forEach(inv => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${inv.client}</td>
-                    <td>$${inv.amount}</td>
-                    <td>${inv.dueDate}</td>
-                    <td><span class="badge ${inv.status}">${capitalize(inv.status)}</span></td>
-                `;
-                invoiceBody.appendChild(row);
-            });
-        }
+### Environment Variables (for the full version)
 
-        function capitalize(text) {
-            return text.charAt(0).toUpperCase() + text.slice(1);
-        }
-
-        // Generate button: unpaid invoices ke liye dummy reminder dikhana
-        document.getElementById("generate-btn").addEventListener("click", () => {
-            remindersDiv.innerHTML = "";
-            successMsg.classList.remove("show");
-
-            const unpaid = invoices.filter(inv => inv.status !== "paid");
-
-            unpaid.forEach(inv => {
-                const box = document.createElement("div");
-                box.className = "reminder";
-                box.innerHTML = `
-                    <strong>To: ${inv.client}</strong>
-                    Hello ${inv.client}, aapka $${inv.amount} ka invoice due date ${inv.dueDate} ko hai. Kripya jald payment kar dein. Dhanyavaad.
-                `;
-                remindersDiv.appendChild(box);
-            });
-
-            approveArea.style.display = unpaid.length ? "flex" : "none";
-        });
-
-        // Approve button: modal kholna
-        document.getElementById("approve-btn").addEventListener("click", () => {
-            modal.classList.add("open");
-        });
-
-        // Modal buttons
-        document.getElementById("cancel-btn").addEventListener("click", () => {
-            modal.classList.remove("open");
-        });
-
-        document.getElementById("confirm-btn").addEventListener("click", () => {
-            modal.classList.remove("open");
-            successMsg.classList.add("show");
-            approveArea.style.display = "none";
-        });
-
-        renderInvoices();
-    </script>
-
-</body>
-</html>
+Create a `.env.local` file in the project root. Do not commit this file.
