@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayPal AI Collections Agent</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --navy: #003087;
+            --blue: #009cde;
+            --light: #f4f6f9;
+            --text: #1f2933;
+            --muted: #616e7c;
+            --border: #e4e7eb;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--light);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(120deg, var(--navy), var(--blue));
+            color: #fff;
+            padding: 28px 24px;
+        }
+        header h1 { font-size: 26px; }
+        header p { font-size: 14px; opacity: 0.9; margin-top: 6px; }
+        .tag {
+            display: inline-block;
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 24px auto;
+            padding: 0 16px;
+            display: grid;
+            gap: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+        .card h2 { font-size: 18px; margin-bottom: 14px; }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .stat { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .stat span { font-size: 13px; color: var(--muted); }
+        .stat strong { display: block; font-size: 24px; margin-top: 6px; }
+
+        /* Table */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 640px; }
+        th, td {
+            text-align: left;
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        th { color: var(--muted); font-weight: 600; }
+
+        /* Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .status-paid { background: #d3f9e0; color: #0f7a3a; }
+        .status-unpaid { background: #fff3c4; color: #8a6100; }
+        .status-overdue { background: #ffd6d6; color: #a11d1d; }
+        .risk-low { background: #e0f2fe; color: #075985; }
+        .risk-medium { background: #ffedd5; color: #9a3412; }
+        .risk-high { background: #fecaca; color: #991b1b; }
+
+        /* Buttons */
+        button {
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover { background: #0081b5; }
+        button:focus-visible { outline: 3px solid #a6dcf5; outline-offset: 2px; }
+        button:disabled { background: #cbd2d9; cursor: not-allowed; }
+        button.secondary { background: var(--border); color: var(--text); }
+        button.secondary:hover { background: #cbd2d9; }
+        button.small { padding: 6px 12px; font-size: 13px; }
+        button.primary-cta { background: var(--navy); }
+        button.primary-cta:hover { background: #002266; }
+
+        .actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+        /* Reminder drafts */
+        .draft {
+            border-left: 4px solid var(--blue);
+            background: #f0f8fc;
+            padding: 14px 16px;
+            margin-top: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .draft-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .draft-head strong { font-size: 15px; }
+
+        /* Activity log */
+        .log { list-style: none; max-height: 240px; overflow-y: auto; }
+        .log li {
+            font-size: 13px;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--border);
+            color: var(--muted);
+        }
+        .log li b { color: var(--text); }
+        .empty { font-size: 14px; color: var(--muted); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 10;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 440px;
+            width: 100%;
+        }
+        .modal h2 { font-size: 18px; margin-bottom: 8px; }
+        .modal p { font-size: 14px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+        .modal .actions { justify-content: flex-end; }
+
+        footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+            padding: 20px 16px;
+        }
+
+        @media (max-width: 600px) {
+            header h1 { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>PayPal AI Collections Agent</h1>
+        <p>An AI agent that tracks overdue invoices, assesses risk, drafts tone-aware reminders, and waits for your approval before anything is sent.</p>
+        <span class="tag">Sandbox demo</span>
+    </header>
+
+    <main>
+
+        <!-- Summary stats -->
+        <section class="stats">
+            <div class="stat"><span>Total outstanding</span><strong id="stat-outstanding">$0</strong></div>
+            <div class="stat"><span>Overdue invoices</span><strong id="stat-overdue">0</strong></div>
+            <div class="stat"><span>High-risk accounts</span><strong id="stat-risk">0</strong></div>
+            <div class="stat"><span>Collected</span><strong id="stat-collected">$0</strong></div>
+        </section>
+
+        <!-- Invoices -->
+        <section class="card">
+            <h2>Invoices</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Amount</th>
+                            <th>Due date</th>
+                            <th>Days overdue</th>
+                            <th>Risk</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoice-body"></tbody>
+                </table>
+            </div>
+
+            <div class="actions" style="margin-top: 18px;">
+                <button id="run-agent-btn" class="primary-cta">Run AI agent on all unpaid invoices</button>
+                <span class="empty" id="agent-status"></span>
+            </div>
+        </section>
+
+        <!-- Drafts queue -->
+        <section class="card" id="drafts-section" style="display:none;">
+            <h2>Reminder queue (awaiting approval)</h2>
+            <div id="drafts"></div>
+            <div class="actions" style="margin-top: 16px; justify-content: flex-end;">
+                <button id="approve-btn" class="primary-cta">Approve &amp; send all</button>
+            </div>
+        </section>
+
+        <!-- Activity log -->
+        <section class="card">
+            <h2>Agent activity log</h2>
+            <ul class="log" id="log">
+                <li class="empty" id="log-empty">No activity yet. Run the agent to begin.</li>
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Approval modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2>Confirm sending reminders</h2>
+            <p id="modal-text">This is a sandbox simulation. No real emails or payments will be sent.</p>
+            <div class="actions">
+                <button class="secondary" id="cancel-btn">Cancel</button>
+                <button id="confirm-btn">Confirm and send</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>Sandbox demo only. No real emails or payments are sent.</footer>
+
+    <script>
+        // Fixed "today" so the demo is consistent
+        const TODAY = new Date("2026-10-16");
+
+        // Mock invoice data (later this comes from the PayPal Invoicing API)
+        const invoices = [
+            { id: 1, client: "Rahul Sharma", email: "rahul@example.com", amount: 450, dueDate: "2026-10-10", paid: false },
+            { id: 2, client: "Priya Designs", email: "priya@example.com", amount: 1200, dueDate: "2026-10-20", paid: false },
+            { id: 3, client: "Acme Studio", email: "billing@acme.example", amount: 800, dueDate: "2026-10-05", paid: true },
+            { id: 4, client: "Nexa Tech", email: "accounts@nexa.example", amount: 2300, dueDate: "2026-09-28", paid: false },
+            { id: 5, client: "Lotus Cafe", email: "owner@lotus.example", amount: 150, dueDate: "2026-10-18", paid: false }
+        ];
+
+        let collected = 0;
+        let pendingDrafts = [];
+
+        const $ = id => document.getElementById(id);
+
+        // Helpers
+        function daysBetween(dateStr) {
+            const due = new Date(dateStr);
+            return Math.round((TODAY - due) / (1000 * 60 * 60 * 24));
+        }
+
+        function getStatus(inv) {
+            if (inv.paid) return "paid";
+            return daysBetween(inv.dueDate) > 0 ? "overdue" : "unpaid";
+        }
+
+        // Simple risk model: how late and how large
+        function getRisk(inv) {
+            if (inv.paid) return "low";
+            const late = daysBetween(inv.dueDate);
+            if (late > 14 || inv.amount >= 2000) return "high";
+            if (late > 0 || inv.amount >= 1000) return "medium";
+            return "low";
+        }
+
+        // Pick a tone based on how late the invoice is
+        function getTone(inv) {
+            const late = daysBetween(inv.dueDate);
+            if (late <= 0) return "friendly";
+            if (late <= 14) return "firm";
+            return "final";
+        }
+
+        function formatMoney(n) {
+            return "$" + n.toLocaleString("en-US");
+        }
+
+        function capitalize(text) {
+            return text.charAt(0).toUpperCase() + text.slice(1);
+        }
+
+        function log(action, detail) {
+            if ($("log-empty")) $("log-empty").remove();
+            const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+            const li = document.createElement("li");
+            li.innerHTML = `<b>${time} - ${action}</b> ${detail}`;
+            $("log").prepend(li);
+        }
+
+        // Draft a reminder. A real build would call the Claude API here.
+        function draftReminder(inv) {
+            const late = daysBetween(inv.dueDate);
+            const tone = getTone(inv);
+            let body;
+
+            if (tone === "friendly") {
+                body = `Hi ${inv.client}, a friendly reminder that invoice #${inv.id} for ${formatMoney(inv.amount)} is due on ${inv.dueDate}. You can pay securely through PayPal using the link below. Thank you!`;
+            } else if (tone === "firm") {
+                body = `Hi ${inv.client}, invoice #${inv.id} for ${formatMoney(inv.amount)} was due on ${inv.dueDate} and is now ${late} days overdue. Please arrange payment within 3 business days using the PayPal link below.`;
+            } else {
+                body = `Hi ${inv.client}, invoice #${inv.id} for ${formatMoney(inv.amount)} is ${late} days overdue. This is our final reminder before we pause services. Please settle this today via the PayPal link below.`;
+            }
+
+            return { inv, tone, body };
+        }
+
+        // Render the main table
+        function renderInvoices() {
+            $("invoice-body").innerHTML = "";
+
+            invoices.forEach(inv => {
+                const status = getStatus(inv);
+                const risk = getRisk(inv);
+                const late = inv.paid ? "-" : (daysBetween(inv.dueDate) > 0 ? daysBetween(inv.dueDate) : "Not due");
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${inv.client}</td>
+                    <td>${formatMoney(inv.amount)}</td>
+                    <td>${inv.dueDate}</td>
+                    <td>${late}</td>
+                    <td><span class="badge risk-${risk}">${capitalize(risk)}</span></td>
+                    <td><span class="badge status-${status}">${capitalize(status)}</span></td>
+                    <td>
+                        ${inv.paid
+                            ? "<span class='empty'>Settled</span>"
+                            : `<button class="small" data-id="${inv.id}" data-action="draft">Draft reminder</button>`}
+                    </td>
+                `;
+                $("invoice-body").appendChild(row);
+            });
+
+            updateStats();
+        }
+
+        function updateStats() {
+            const unpaid = invoices.filter(i => !i.paid);
+            const outstanding = unpaid.reduce((sum, i) => sum + i.amount, 0);
+            const overdue = unpaid.filter(i => daysBetween(i.dueDate) > 0).length;
+            const highRisk = unpaid.filter(i => getRisk(i) === "high").length;
+
+            $("stat-outstanding").textContent = formatMoney(outstanding);
+            $("stat-overdue").textContent = overdue;
+            $("stat-risk").textContent = highRisk;
+            $("stat-collected").textContent = formatMoney(collected);
+        }
+
+        // Render the approval queue
+        function renderDrafts() {
+            const box = $("drafts");
+            box.innerHTML = "";
+
+            if (pendingDrafts.length === 0) {
+                $("drafts-section").style.display = "none";
+                return;
+            }
+
+            $("drafts-section").style.display = "block";
+
+            pendingDrafts.forEach(d => {
+                const div = document.createElement("div");
+                div.className = "draft";
+                div.innerHTML = `
+                    <div class="draft-head">
+                        <strong>To: ${d.inv.client} (${d.inv.email})</strong>
+                        <span class="badge risk-${d.tone === 'final' ? 'high' : d.tone === 'firm' ? 'medium' : 'low'}">Tone: ${capitalize(d.tone)}</span>
+                    </div>
+                    ${d.body}
+                `;
+                box.appendChild(div);
+            });
+        }
+
+        // Agent: draft reminders for every unpaid invoice
+        function runAgent() {
+            const unpaid = invoices.filter(i => !i.paid);
+
+            if (unpaid.length === 0) {
+                $("agent-status").textContent = "No unpaid invoices.";
+                return;
+            }
+
+            log("Agent started", `Scanning ${invoices.length} invoices.`);
+            pendingDrafts = unpaid.map(draftReminder);
+
+            pendingDrafts.forEach(d => {
+                log("Draft created", `${d.inv.client}: ${formatMoney(d.inv.amount)}, tone "${d.tone}".`);
+            });
+
+            $("agent-status").textContent = `${pendingDrafts.length} reminder(s) ready for approval.`;
+            renderDrafts();
+        }
+
+        // Single draft from the table
+        function draftSingle(id) {
+            const inv = invoices.find(i => i.id === id);
+            const d = draftReminder(inv);
+            pendingDrafts = pendingDrafts.filter(p => p.inv.id !== id);
+            pendingDrafts.push(d);
+            log("Draft created", `${inv.client}: tone "${d.tone}".`);
+            renderDrafts();
+        }
+
+        // Approval flow
+        function openModal() {
+            if (pendingDrafts.length === 0) return;
+            $("modal-text").textContent =
+                `You are about to send ${pendingDrafts.length} reminder(s). This is a sandbox simulation. No real emails or payments will be sent.`;
+            $("modal").classList.add("open");
+        }
+
+        function confirmSend() {
+            $("modal").classList.remove("open");
+
+            pendingDrafts.forEach(d => {
+                log("Reminder sent (simulated)", `To ${d.inv.email}. Payment link created in PayPal sandbox.`);
+            });
+
+            $("agent-status").textContent = `${pendingDrafts.length} reminder(s) sent (simulated).`;
+            pendingDrafts = [];
+            renderDrafts();
+        }
+
+        // Event listeners
+        $("run-agent-btn").addEventListener("click", runAgent);
+        $("approve-btn").addEventListener("click", openModal);
+        $("cancel-btn").addEventListener("click", () => $("modal").classList.remove("open"));
+        $("confirm-btn").addEventListener("click", confirmSend);
+
+        $("invoice-body").addEventListener("click", e => {
+            const btn = e.target.closest("button[data-action='draft']");
+            if (btn) draftSingle(Number(btn.dataset.id));
+        });
+
+        renderInvoices();
+    </script>
+
+</body>
+</html>
